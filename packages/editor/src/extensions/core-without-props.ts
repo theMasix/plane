@@ -4,8 +4,8 @@
  * See the LICENSE file for details.
  */
 
-import TaskItem from "@tiptap/extension-task-item";
-import TaskList from "@tiptap/extension-task-list";
+import { TaskItem } from "@tiptap/extension-task-item";
+import { TaskList } from "@tiptap/extension-task-list";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { Underline } from "@tiptap/extension-underline";
 // plane editor imports
@@ -41,12 +41,14 @@ export const CoreEditorExtensionsWithoutProps = [
   TextStyle,
   TaskList.configure({
     HTMLAttributes: {
-      class: "not-prose pl-2 space-y-2",
+      class: "not-prose ps-2 space-y-2",
+      dir: "auto",
     },
   }),
   TaskItem.configure({
     HTMLAttributes: {
       class: "flex",
+      dir: "auto",
     },
     nested: true,
   }),

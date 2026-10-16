@@ -53,7 +53,7 @@ export class TableView implements NodeView {
       Array.from({ length: this.map.width }, () => 1).map(() => h("col"))
     );
     this.tbody = h("tbody");
-    this.table = h("table", null, this.colgroup, this.tbody);
+    this.table = h("table", { dir: "auto" }, this.colgroup, this.tbody);
 
     this.root = h(
       "div",

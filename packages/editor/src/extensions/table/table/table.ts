@@ -117,7 +117,7 @@ export const Table = Node.create<TableOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ["table", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), ["tbody", 0]];
+    return ["table", mergeAttributes(this.options.HTMLAttributes, { dir: "auto" }, HTMLAttributes), ["tbody", 0]];
   },
 
   addCommands() {
