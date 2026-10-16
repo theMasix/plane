@@ -88,6 +88,21 @@ const getFlexAlignStyle = (textAlign: string | null | undefined): Style => {
   return {};
 };
 
+const RTL_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
+const hasRtlContent = (node: TipTapNode): boolean => {
+  if (node.text && RTL_REGEX.test(node.text)) return true;
+  if (node.content && Array.isArray(node.content)) {
+    return node.content.some(hasRtlContent);
+  }
+  return false;
+};
+
+const getRtlStyle = (isRtl: boolean): Style => {
+  if (!isRtl) return {};
+  return { fontFamily: "Vazirmatn" };
+};
+
 export const nodeRenderers: NodeRendererRegistry = {
   doc: (_node: TipTapNode, children: ReactElement[], ctx: PDFRenderContext): ReactElement => (
     <View key={ctx.getKey()}>{children}</View>
@@ -98,16 +113,21 @@ export const nodeRenderers: NodeRendererRegistry = {
 
   paragraph: (node: TipTapNode, children: ReactElement[], ctx: PDFRenderContext): ReactElement => {
     const textAlign = node.attrs?.textAlign as string | null;
+    const dir = node.attrs?.dir as string | null | undefined;
+    const isRtl = dir === "rtl" || hasRtlContent(node);
+    // For RTL paragraphs with no explicit alignment, default to right-aligned
+    const effectiveTextAlign = textAlign ?? (isRtl ? "right" : null);
     const background = node.attrs?.backgroundColor as string | undefined;
-    const alignStyle = getTextAlignStyle(textAlign);
-    const flexStyle = getFlexAlignStyle(textAlign);
+    const alignStyle = getTextAlignStyle(effectiveTextAlign);
+    const flexStyle = getFlexAlignStyle(effectiveTextAlign);
+    const rtlStyle = getRtlStyle(isRtl);
     const resolvedBgColor =
       background && background !== "default" ? resolveColorForPdf(background, "background") : null;
     const bgStyle = resolvedBgColor ? { backgroundColor: resolvedBgColor } : {};
 
     return (
       <View key={ctx.getKey()} style={[pdfStyles.paragraphWrapper, flexStyle, bgStyle]}>
-        <Text style={[pdfStyles.paragraph, alignStyle, bgStyle]}>{children}</Text>
+        <Text style={[pdfStyles.paragraph, alignStyle, rtlStyle, bgStyle]}>{children}</Text>
       </View>
     );
   },
@@ -117,12 +137,17 @@ export const nodeRenderers: NodeRendererRegistry = {
     const styleKey = `heading${level}` as keyof typeof pdfStyles;
     const style = pdfStyles[styleKey] || pdfStyles.heading1;
     const textAlign = node.attrs?.textAlign as string | null;
-    const alignStyle = getTextAlignStyle(textAlign);
-    const flexStyle = getFlexAlignStyle(textAlign);
+    const dir = node.attrs?.dir as string | null | undefined;
+    const isRtl = dir === "rtl" || hasRtlContent(node);
+    // For RTL headings with no explicit alignment, default to right-aligned
+    const effectiveTextAlign = textAlign ?? (isRtl ? "right" : null);
+    const alignStyle = getTextAlignStyle(effectiveTextAlign);
+    const flexStyle = getFlexAlignStyle(effectiveTextAlign);
+    const rtlStyle = getRtlStyle(isRtl);
 
     return (
       <View key={ctx.getKey()} style={flexStyle}>
-        <Text style={[style, alignStyle]}>{children}</Text>
+        <Text style={[style, alignStyle, rtlStyle]}>{children}</Text>
       </View>
     );
   },

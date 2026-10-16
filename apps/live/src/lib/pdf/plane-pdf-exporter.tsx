@@ -5,7 +5,9 @@
  */
 
 import { createRequire } from "module";
+import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { Document, Font, Page, pdf, Text } from "@react-pdf/renderer";
 import { createKeyGenerator, renderNode } from "./node-renderers";
 import { pdfStyles } from "./styles";
@@ -50,6 +52,32 @@ Font.register({
   ],
 });
 
+// Resolve Vazirmatn font files for Persian / Arabic RTL content in PDF exports
+const vazirmatnCandidates = [
+  path.resolve(process.cwd(), "apps/live/fonts/vazirmatn"),
+  path.resolve(process.cwd(), "fonts/vazirmatn"),
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../fonts/vazirmatn"),
+];
+const vazirmatnFontDir = vazirmatnCandidates.find((dir) => fs.existsSync(dir)) || vazirmatnCandidates[0];
+
+Font.register({
+  family: "Vazirmatn",
+  fonts: [
+    {
+      src: fs.existsSync(path.join(vazirmatnFontDir, "vazirmatn-regular.woff"))
+        ? path.join(vazirmatnFontDir, "vazirmatn-regular.woff")
+        : path.join(vazirmatnFontDir, "vazirmatn-regular.ttf"),
+      fontWeight: 400,
+    },
+    {
+      src: fs.existsSync(path.join(vazirmatnFontDir, "vazirmatn-bold.woff"))
+        ? path.join(vazirmatnFontDir, "vazirmatn-bold.woff")
+        : path.join(vazirmatnFontDir, "vazirmatn-bold.ttf"),
+      fontWeight: 700,
+    },
+  ],
+});
+
 export const createPdfDocument = (doc: TipTapDocument, options: PDFExportOptions = {}) => {
   const { title, author, subject, pageSize = "A4", pageOrientation = "portrait", metadata, noAssets } = options;
 
@@ -60,10 +88,15 @@ export const createPdfDocument = (doc: TipTapDocument, options: PDFExportOptions
   const getKey = createKeyGenerator();
   const renderedContent = content.map((node, index) => renderNode(node, "doc", index, mergedMetadata, getKey));
 
+  const isTitleRtl = title
+    ? /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(title)
+    : false;
+  const titleStyle = [pdfStyles.title, isTitleRtl ? ({ fontFamily: "Vazirmatn", textAlign: "right" as const }) : {}];
+
   return (
     <Document title={title} author={author} subject={subject}>
       <Page size={pageSize} orientation={pageOrientation} style={pdfStyles.page}>
-        {title && <Text style={pdfStyles.title}>{title}</Text>}
+        {title && <Text style={titleStyle}>{title}</Text>}
         {renderedContent}
       </Page>
     </Document>
